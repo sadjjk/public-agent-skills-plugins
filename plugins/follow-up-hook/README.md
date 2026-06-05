@@ -39,6 +39,9 @@ Agent 做完了，顺便再自我问一句
 # 在 openclaw-extensions 目录下执行
 cd plugins/follow-up-hook/openclaw-extensions
 openclaw plugins install .
+
+# 重启生效
+openclaw gateway restart
 ```
 
 **Skill 模式**：

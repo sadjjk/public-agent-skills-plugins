@@ -1,0 +1,25 @@
+{
+  "activation": { "onStartup": true },
+  "id": "usage-stats-hook",
+  "name": "Usage Stats",
+  "kind": "tool",
+  "description": "每轮 agent 回复结束后，自动追加资源消耗统计（token、API 调用、cost、工具调用）",
+  "version": "0.2.0",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "default": true,
+        "description": "Enable or disable the usage-stats-hook plugin."
+      },
+      "mode": {
+        "type": "string",
+        "enum": ["compact", "detailed"],
+        "default": "detailed",
+        "description": "统计输出模式：compact=单行精简(~16 tokens)，detailed=多行详情(~85 tokens)"
+      }
+    },
+    "additionalProperties": false
+  }
+}

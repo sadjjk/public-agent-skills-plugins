@@ -1,0 +1,11 @@
+{
+  "name": "usage-stats-hook",
+  "version": "0.2.0",
+  "description": "每轮 agent 回复结束后，自动追加资源消耗统计（token、API 调用、cost、工具调用）",
+  "main": "index.js",
+  "openclaw": {
+    "extensions": [
+      "./index.js"
+    ]
+  }
+}
