@@ -1,0 +1,11 @@
+{
+  "name": "follow-up-hook",
+  "version": "0.1.0",
+  "description": "每轮回复前注入追问指令，让 agent 自动生成深挖式追问建议",
+  "main": "index.js",
+  "openclaw": {
+    "extensions": [
+      "./index.js"
+    ]
+  }
+}

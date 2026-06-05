@@ -1,0 +1,19 @@
+{
+  "activation": { "onStartup": true },
+  "id": "follow-up-hook",
+  "name": "Follow-Up Suggester",
+  "kind": "tool",
+  "description": "每次回复前注入追问指令，让 agent 自动生成深挖式追问建议",
+  "version": "0.1.0",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "default": true,
+        "description": "Enable or disable the follow-up-hook plugin."
+      }
+    },
+    "additionalProperties": false
+  }
+}
