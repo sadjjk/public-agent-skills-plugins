@@ -3,9 +3,8 @@
 AI Agent 的工具箱 —— 自研 Skills & Plugins + 开源生态，开箱即用。
 
 <h4 align="center">
-  <img src="https://img.shields.io/badge/🛠️ 自研-都什么年代了还在搞原创，搞来搞去也就这样-6C63FF?style=for-the-badge" />
-  &nbsp;&nbsp;
-  <img src="https://img.shields.io/badge/📦 开源-拿来吧你，好用的东西就是要记录-00B4D8?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/🛠️ 自研-还在搞什么原创，搞来搞去也就这样-6C63FF?style=for-the-badge" /><br/><br/>
+  <img src="https://img.shields.io/badge/📦 开源-拿来吧你，好用的东西就是要记下来-00B4D8?style=for-the-badge" />
 </h4>
 
 ## 📌 使用方式
