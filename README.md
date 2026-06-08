@@ -3,8 +3,7 @@
 AI Agent 的技能书和工具箱 —— 自研 Skills & Plugins + 开源收录。
 
 <h4 align="center">
-  <img src="https://img.shields.io/badge/🛠️ 自研-还在搞什么原创，搞来搞去也就这样-6C63FF?style=for-the-badge" /><br/><br/>
-  <img src="https://img.shields.io/badge/📦 收录-拿来吧你，好用的东西就是要记下来-00B4D8?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/🛠️ 自研-还在搞什么原创，搞来搞去也就这样-6C63FF?style=for-the-badge" />
 </h4>
 
 ## 📌 使用方式
@@ -74,12 +73,29 @@ AI Agent 的技能书和工具箱 —— 自研 Skills & Plugins + 开源收录�
   <td>⚖️ 这一句到底值多少仁义道德<br/>→ 每轮回复后自动追加统计信息</td>
   <td>compact/detailed 双模式 ；展示Token/上下文/消耗/工具/技能等统计<br/><img src="./plugins/usage-stats-hook/imgs/飞书模式.jpg" width="360" /></td>
 </tr>
+<tr>
+  <td><a href="./plugins/agent-undo/">agent-undo-hook</a></td>
+  <td>🪶 一句对Agent说的话 可轻如鹅毛 亦可重于泰山<br/>→ Agent 文件变更自动归因与回撤</td>
+  <td>轮次级归因、自动识别项目、项目隔离、渠道类型归因<br/><img src="./plugins/agent-undo/imgs/au初始化示例.jpg" width="360" /></td>
+</tr>
 </table>
+
+> 待补充
 
 ## 📦 Skills（收录）
 
 > 待补充
 
 ## 🔌 Plugins（收录）
-
-> 待补充
+<table>
+<tr>
+  <th width="200">Plugin</th>
+  <th width="300">说明</th>
+  <th>关键特性</th>
+</tr>
+<tr>
+  <td><a href="https://github.com/peaktwilight/agent-undo">agent-undo</a><br/><a href="https://github.com/sadjjk/agent-undo">agent-undo (Fork)</a></td>
+  <td>💊 要是能重来 我要选李白<br/>→ 人无法回撤 但AI Agent一定要可以</td>
+  <td>原版提供了非常好的类似 git 的轻量化命令 au，但只支持 Claude Code，于是 Fork 魔改 支持更多Agent</td>
+</tr>
+</table>

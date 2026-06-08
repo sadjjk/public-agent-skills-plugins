@@ -49,8 +49,9 @@ cd $SKILL_DIR/server && npm install
 1. **如果提供了文件路径**：
    a. 确认文件路径为绝对路径
    b. 注册文件：`curl -s "http://localhost:PORT/api/register?path=ENCODED_ABS_PATH"`
+      返回 JSON 中的 id 字段即为文件 ID
    c. 如果 server 未运行：`cd $SKILL_DIR/server && node viewer-server.js &`，等待 2 秒后重新注册
-   d. 打开浏览器：`open "http://localhost:PORT/i/ID"`
+   d. 打开浏览器：`open "http://localhost:PORT/i/{id}"`
 
 2. **如果没有提供文件路径**：
    a. 如果 server 未运行：`cd $SKILL_DIR/server && node viewer-server.js &`，等待 2 秒

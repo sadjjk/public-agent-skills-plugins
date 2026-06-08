@@ -59,6 +59,9 @@ compact 模式一行搞定，detailed 模式展开细节。
 cd plugins/usage-stats-hook
 openclaw plugins install .
 
+# 配置插件（启用 + 允许读取对话上下文）
+openclaw gateway config.patch --raw '{"plugins":{"entries":{"usage-stats-hook":{"enabled":true,"hooks":{"allowConversationAccess":true}}}}}'
+
 # 重启生效
 openclaw gateway restart
 ```

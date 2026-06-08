@@ -1,0 +1,52 @@
+{
+  "activation": { "onStartup": true },
+  "id": "agent-undo-hook",
+  "name": "Agent Undo Hook",
+  "kind": "tool",
+  "description": "Tracks agent file writes via au hook pre/post protocol for accurate attribution.",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "default": true
+      },
+      "uninitRemindDailyLimit": {
+        "type": "number",
+        "default": 3,
+        "description": "每天最多提醒「未初始化 au」的次数，0 表示关闭提醒，默认 3 次"
+      },
+      "uninitRemindIntervalMin": {
+        "type": "number",
+        "default": 5,
+        "description": "同一项目两次「未初始化 au」提醒的最小间隔（分钟），0 表示不限，默认 5 分钟"
+      },
+      "uninitRemindIgnorePaths": {
+        "type": "array",
+        "items": { "type": "string" },
+        "default": [],
+        "description": "忽略「未初始化 au」提醒的路径前缀列表，支持 ~ 展开"
+      },
+      "autostopIdleMinutes": {
+        "type": "number",
+        "default": 120,
+        "description": "自动停止闲置 au daemon 的时间（分钟），0 表示关闭自动停止，默认 120 分钟"
+      },
+      "autoPinGapDays": {
+        "type": "number",
+        "default": 1,
+        "description": "距上次操作超过此天数时自动 au pin，0 表示关闭自动 pin，默认 1 天"
+      },
+      "promptTruncLen": {
+        "type": "number",
+        "default": 200,
+        "description": "au session end 时 prompt 字段截断长度，默认 200 字符"
+      },
+      "outputTruncLen": {
+        "type": "number",
+        "default": 200,
+        "description": "au session end 时 prompt_output 字段截断长度，默认 200 字符"
+      }
+    }
+  }
+}

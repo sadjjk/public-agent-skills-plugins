@@ -7,7 +7,6 @@ const path = require("path");
 let pluginConfig = { mode: "detailed" };
 const STATS_MARKER = "\n\n---\n\n📊"; // 统计块起始标记
 
-
 // ─── Token 格式化（K 单位）────────────────────────────────
 function formatTokenK(n) {
   if (!n || n === 0) return "0K";
@@ -296,7 +295,9 @@ function buildCompactBlock(stats) {
   if (stats.lastRawInput > 0 && stats.model) {
     const ctxInfo = modelContextMap[stats.model];
     if (ctxInfo && ctxInfo.contextTokens > 0) {
-      const pct = Math.round((stats.lastRawInput / ctxInfo.contextTokens) * 100);
+      const pct = Math.round(
+        (stats.lastRawInput / ctxInfo.contextTokens) * 100,
+      );
       parts.push("📏" + pct + "%");
     }
   }
@@ -355,7 +356,9 @@ function buildDetailedBlock(stats) {
     if (ctxInfo && ctxInfo.contextTokens > 0) {
       const usedK = formatTokenK(stats.lastRawInput);
       const totalK = formatTokenK(ctxInfo.contextTokens);
-      const pct = Math.round((stats.lastRawInput / ctxInfo.contextTokens) * 100);
+      const pct = Math.round(
+        (stats.lastRawInput / ctxInfo.contextTokens) * 100,
+      );
       lines.push(`📏 **Context** ${usedK} / ${totalK} ${pct}%`);
     }
   }
@@ -531,7 +534,6 @@ module.exports = {
     });
 
     // ─── session → channel 映射 ──
-    
 
     // ── before_prompt_build: 记录单轮起始时间 + 渠道 ──
     api.on("before_prompt_build", (event, ctx) => {
@@ -543,7 +545,7 @@ module.exports = {
 
       // 记录渠道，供 before_message_write 判断写入路径
       if (ctx?.channelId) {
-        }
+      }
     });
 
     // ── agent_end: 记录总耗时 ──
@@ -570,13 +572,16 @@ module.exports = {
         if (!global.__ocCardAppendReady) global.__ocCardAppendReady = new Map();
         const ready = global.__ocCardAppendReady.get(sk);
         if (ready) ready(text);
-        return;  // 飞书到此结束，不写 msg.content
+        return; // 飞书到此结束，不写 msg.content
       }
       // 其他渠道：写 msg.content
       if (typeof msg.content === "string") {
         if (replaceMarker) {
           const idx = msg.content.lastIndexOf(replaceMarker);
-          if (idx !== -1) { msg.content = msg.content.slice(0, idx) + suffix; return; }
+          if (idx !== -1) {
+            msg.content = msg.content.slice(0, idx) + suffix;
+            return;
+          }
         }
         msg.content += suffix;
       } else if (Array.isArray(msg.content)) {
@@ -584,7 +589,10 @@ module.exports = {
         if (last?.type === "text" && typeof last.text === "string") {
           if (replaceMarker) {
             const idx = last.text.lastIndexOf(replaceMarker);
-            if (idx !== -1) { last.text = last.text.slice(0, idx) + suffix; return; }
+            if (idx !== -1) {
+              last.text = last.text.slice(0, idx) + suffix;
+              return;
+            }
           }
           last.text += suffix;
         } else {
@@ -597,22 +605,22 @@ module.exports = {
     // usage 主路径：msg.usage（per-call）× turnCount 估算，加 ≈ 标记
     api.on("before_message_write", (event, ctx) => {
       const msg = event.message;
-      if (!msg || msg.role !== "assistant" || msg.stopReason !== "stop")
-        return;
+      if (!msg || msg.role !== "assistant" || msg.stopReason !== "stop") return;
       const _ts = Date.now();
       const sk = ctx?.sessionKey;
       if (!sk || sk.includes(":subagent:") || sk.includes(":cron:")) return;
-      
+
       const stats = getStats(sk);
       if (!stats) return;
-      if (stats.llmCalls === 0 && !msg.usage && stats.toolCalls.length === 0) return;
+      if (stats.llmCalls === 0) return;
 
       // 从 msg 提取 usage 估算总量
       // input × turnCount：每轮 input 包含之前所有轮的 output（对话历史累积）
       // output 只取最后一次：中间工具调用的 output 已作为下一轮 input 被统计
       if (msg.usage) {
-        stats.lastRawInput = (msg.usage.input || 0) + (msg.usage.cacheRead || 0); // 上下文实际占用（含缓存）
-        const turnCount = estimateApiCalls(stats) || 1; // 兜底：llm_output 未触发时至少算 1 轮
+        stats.lastRawInput =
+          (msg.usage.input || 0) + (msg.usage.cacheRead || 0); // 上下文实际占用（含缓存）
+        const turnCount = estimateApiCalls(stats); // 兜底：llm_output 未触发时至少算 1 轮
         stats.usage.input = (msg.usage.input || 0) * turnCount;
         stats.usage.output = msg.usage.output || 0;
         stats.usage.cacheRead = (msg.usage.cacheRead || 0) * turnCount;
