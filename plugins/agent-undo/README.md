@@ -46,18 +46,13 @@ Agent 改完文件后 【我改好了 Over Over】
 
 Agent Undo 就把这个期间这个项目任何文件的改动 都算再当前Agent上
 
-## 🏠 仓库说明
-
-本项目存在两个版本：
-
-| 仓库 | 说明 |
-|------|------|
-| [peaktwilight/agent-undo](https://github.com/peaktwilight/agent-undo) | **上游原版** — 基础文件跟踪与回撤功能 |
-| [sadjjk/agent-undo](https://github.com/sadjjk/agent-undo) | **增强 Fork** — 在原版基础上新增 `au revert`（diff 预览 + 确认回撤） |
-
-> `au revert` 命令仅在 **sadjjk/agent-undo** 中支持。如需此功能，请从 [sadjjk/agent-undo](https://github.com/sadjjk/agent-undo) 安装。
-
 ## 🚀 使用
+
+Agent Undo 分三层使用，层层递进，强烈推荐三层都配置上：
+
+- **1️⃣ au CLI** — 基础层，文件跟踪与回撤的命令行工具
+- **2️⃣ OpenClaw Hook** — 自动层，Agent 编辑时自动归因，无需手动
+- **3️⃣ au-viewer Skill** — 可视化层，浏览器浏览时间线 + 一键回滚
 
 ### 1️⃣ au CLI — 命令行
 
@@ -72,6 +67,8 @@ Agent Undo 就把这个期间这个项目任何文件的改动 都算再当前Ag
 | `au log / blame / diff` | 查询 |
 | `au oops` | 撤销最近一波 |
 | `au revert` | 指定回撤（仅 sadjjk 版） |
+
+> 🏠 本项目存在两个版本：[peaktwilight/agent-undo](https://github.com/peaktwilight/agent-undo)（上游原版） | [sadjjk/agent-undo](https://github.com/sadjjk/agent-undo)（增强 Fork，新增 `au revert`）
 
 详见 [au-cli命令-使用方法](docs/au-cli命令-使用方法.md)
 

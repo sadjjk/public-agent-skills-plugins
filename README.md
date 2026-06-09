@@ -27,7 +27,12 @@ AI Agent 的技能书和工具箱 —— 自研 Skills & Plugins + 开源收录�
 <tr>
   <td><a href="./skills/md-viewer/">md-viewer</a></td>
   <td>✨ 给 Markdown 开扇窗<br/>→ 本地 Markdown 文件浏览器</td>
-  <td>GFM 渲染、Mermaid 图表、目录导航、图片放大、文件浏览、自动刷新、主题切换<br/><img src="./skills/md-viewer/imgs/预览页.jpg" width="360" /></td>
+  <td>Mermaid 图表、目录导航、图片放大、文件浏览<br/><img src="./skills/md-viewer/imgs/预览页.jpg" width="360" /></td>
+</tr>
+<tr>
+  <td><a href="./skills/au-viewer/">au-viewer</a></td>
+  <td>🔄 自动备份是最朴素但又实用的发明<br/>→ Agent 文件变更可视化及回滚<br/>🔥 强烈推荐三件套：<br/>　CLI 层 <a href="https://github.com/sadjjk/agent-undo">agent-undo (Fork)</a><br/>　Hook 层 <a href="./plugins/agent-undo/">agent-undo-hook</a><br/>　Skill 层 <a href="./skills/au-viewer/">au-viewer</a></td>
+  <td>diff 对比、一键回滚、全局快照、文件 Blame<br/><img src="./skills/au-viewer/imgs/会话明细.jpg" width="360" /><br/><img src="./skills/au-viewer/imgs/确定文件恢复.jpg" width="360" /></td>
 </tr>
 </table>
 
@@ -75,12 +80,11 @@ AI Agent 的技能书和工具箱 —— 自研 Skills & Plugins + 开源收录�
 </tr>
 <tr>
   <td><a href="./plugins/agent-undo/">agent-undo-hook</a></td>
-  <td>🪶 一句对Agent说的话 可轻如鹅毛 亦可重于泰山<br/>→ Agent 文件变更自动归因与回撤</td>
+  <td>🪶 Agent做起事来 可轻如鹅毛 亦可重于泰山<br/>→ Agent 文件变更自动归因与回撤</td>
   <td>轮次级归因、自动识别项目、项目隔离、渠道类型归因<br/><img src="./plugins/agent-undo/imgs/au初始化示例.jpg" width="360" /></td>
 </tr>
 </table>
 
-> 待补充
 
 ## 📦 Skills（收录）
 

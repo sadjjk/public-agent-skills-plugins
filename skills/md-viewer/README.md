@@ -75,8 +75,6 @@ graph LR
 
 ⚠️ 不要用"查看""打开"等通用词，容易与其他 skill 冲突。
 
-首次使用需安装依赖：`cd $SKILL_DIR/server && npm install`
-
 详细命令见 [SKILL.md](SKILL.md)。
 
 ## ⚙️ 配置

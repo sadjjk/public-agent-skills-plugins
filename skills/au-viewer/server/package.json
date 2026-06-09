@@ -1,0 +1,13 @@
+{
+  "name": "au-viewer-server",
+  "version": "1.0.0",
+  "description": "Local server for the au-viewer skill",
+  "main": "au-viewer-server.js",
+  "scripts": {
+    "start": "node au-viewer-server.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "better-sqlite3": "^11.0.0"
+  }
+}
