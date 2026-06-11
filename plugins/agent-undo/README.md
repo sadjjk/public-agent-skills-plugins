@@ -93,7 +93,21 @@ Agent Undo 分三层使用，层层递进，强烈推荐三层都配置上：
 OpenClaw Skill，在浏览器中浏览项目文件变更时间线 + 一键回滚：
 
 - **触发**：`au-viewer <项目路径>` 或 `au-viewer`
-- **功能**：事件时间线、diff 查看、会话级/事件级回滚、文件 blame、全局快照
+
+| | |
+|---|---|
+| ![初始页](../../skills/au-viewer/imgs/初始页.jpg) <br/> **初始页** — 项目选择 + 快速入口 | ![会话明细](../../skills/au-viewer/imgs/会话明细.jpg) <br/> **会话明细** — Session 级别操作记录 |
+| ![事件明细](../../skills/au-viewer/imgs/事件明细.jpg) <br/> **事件明细** — 单次文件变更详情 | ![恢复预览](../../skills/au-viewer/imgs/恢复预览.jpg) <br/> **恢复预览** — 左右 diff 对比 + 选区隔离 |
+| ![文件修改历史](../../skills/au-viewer/imgs/文件修改历史.jpg) <br/> **文件修改历史** — 单文件变更时间线 | ![确定文件恢复](../../skills/au-viewer/imgs/确定文件恢复.jpg) <br/> **确定文件恢复** — 确认后一键回滚 |
+
+其他功能：
+
+- **多维度过滤** — 文件名 / 时间 / Action / Agent / Session
+- **文件 Blame** — 行级归属追踪
+- **全局快照** — Pin 列表 + 恢复
+- **多主题切换**
+
+详见 [au-viewer README](../../skills/au-viewer/README.md)
 
 
 
