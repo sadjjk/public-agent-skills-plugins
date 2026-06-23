@@ -346,6 +346,8 @@ function getViewTemplate(
 
     <script src="https://unpkg.com/marked@15.0.12/marked.min.js"></script>
     <script src="https://unpkg.com/mermaid@11.6.0/dist/mermaid.min.js"></script>
+    <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
     <style>
         :root {
             --bg-primary: #0d1117;
@@ -354,6 +356,10 @@ function getViewTemplate(
             --accent: #7fdbca;
             --accent-light: #a3e4c8;
             --accent-dark: #5fb8a4;
+            --accent-5: rgba(127,219,202,0.05);
+            --accent-10: rgba(127,219,202,0.10);
+            --accent-12: rgba(127,219,202,0.12);
+            --accent-20: rgba(127,219,202,0.20);
             --text-primary: #c9d1d9;
             --text-secondary: #8b949e;
             --border-color: #30363d;
@@ -371,6 +377,10 @@ function getViewTemplate(
             --accent: #7fdbca;
             --accent-light: #a3e4c8;
             --accent-dark: #5fb8a4;
+            --accent-5: rgba(127,219,202,0.05);
+            --accent-10: rgba(127,219,202,0.10);
+            --accent-12: rgba(127,219,202,0.12);
+            --accent-20: rgba(127,219,202,0.20);
             --text-primary: #c9d1d9;
             --text-secondary: #8b949e;
             --border-color: #30363d;
@@ -386,6 +396,10 @@ function getViewTemplate(
             --accent: #2563eb;
             --accent-light: #3b82f6;
             --accent-dark: #1d4ed8;
+            --accent-5: rgba(37,99,235,0.05);
+            --accent-10: rgba(37,99,235,0.10);
+            --accent-12: rgba(37,99,235,0.12);
+            --accent-20: rgba(37,99,235,0.20);
             --text-primary: #1f2937;
             --text-secondary: #6b7280;
             --border-color: #d1d5db;
@@ -401,6 +415,10 @@ function getViewTemplate(
             --accent: #58a6ff;
             --accent-light: #79c0ff;
             --accent-dark: #388bfd;
+            --accent-5: rgba(88,166,255,0.05);
+            --accent-10: rgba(88,166,255,0.10);
+            --accent-12: rgba(88,166,255,0.12);
+            --accent-20: rgba(88,166,255,0.20);
             --text-primary: #e6edf3;
             --text-secondary: #8b949e;
             --border-color: #30363d;
@@ -477,7 +495,7 @@ function getViewTemplate(
             transition: background 0.15s;
         }
         .sidebar-item:hover { background: var(--bg-tertiary); }
-        .sidebar-item.active { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+        .sidebar-item.active { background: var(--accent-12); }
         .sidebar-item.active .sidebar-name { color: var(--accent); font-weight: 500; }
         .sidebar-name {
             font-size: 13px;
@@ -526,7 +544,7 @@ function getViewTemplate(
         .sidebar-add-btn {
             width: 100%;
             padding: 8px;
-            background: color-mix(in srgb, var(--accent) 10%, transparent);
+            background: var(--accent-10);
             border: 1px dashed var(--accent-dark);
             color: var(--accent);
             border-radius: 6px;
@@ -534,12 +552,12 @@ function getViewTemplate(
             font-size: 13px;
             transition: background 0.15s;
         }
-        .sidebar-add-btn:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+        .sidebar-add-btn:hover { background: var(--accent-20); }
         .drop-overlay {
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: color-mix(in srgb, var(--accent) 10%, transparent);
+            background: var(--accent-10);
             border: 3px dashed var(--accent);
             z-index: 999;
             pointer-events: none;
@@ -758,7 +776,7 @@ function getViewTemplate(
         .markdown-body code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 0.88em; color: var(--accent); font-family: 'SF Mono','Fira Code',monospace; }
         .markdown-body pre { background: var(--code-bg); padding: 14px; border-radius: 8px; overflow-x: auto; margin: 10px 0; border: 1px solid var(--border-color); }
         .markdown-body pre code { background: none; padding: 0; color: var(--code-inline-color); font-size: 0.88em; }
-        .markdown-body blockquote { border-left: 3px solid var(--accent-dark); padding: 8px 14px; margin: 10px 0; background: color-mix(in srgb, var(--accent) 5%, transparent); color: var(--text-secondary); }
+        .markdown-body blockquote { border-left: 3px solid var(--accent-dark); padding: 8px 14px; margin: 10px 0; background: var(--accent-5); color: var(--text-secondary); }
         .markdown-body ul, .markdown-body ol { margin: 6px 0 6px 22px; }
         .markdown-body li { margin: 3px 0; }
         .markdown-body hr { border: none; border-top: 1px solid var(--border-color); margin: 20px 0; }
@@ -795,6 +813,22 @@ function getViewTemplate(
         .mermaid { background: var(--bg-secondary); padding: 14px; border-radius: 8px; margin: 10px 0; }
         .search-highlight { background: rgba(255,203,107,0.3); border-radius: 2px; }
         .search-highlight-current { background: rgba(255,203,107,0.6); }
+
+        .export-wrapper { position: relative; }
+        .export-menu {
+            display: none; position: absolute; right: 0; top: 100%;
+            margin-top: 6px; background: var(--bg-secondary);
+            border: 1px solid var(--border-color); border-radius: 8px;
+            overflow: hidden; z-index: 100; min-width: 160px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        .export-menu.open { display: block; }
+        .export-option {
+            display: block; width: 100%; padding: 10px 16px;
+            background: none; border: none; color: var(--text-primary);
+            font-size: 14px; text-align: left; cursor: pointer;
+        }
+        .export-option:hover { background: var(--bg-tertiary); }
 
         @media print {
             .sidebar, .app-header { display: none; }
@@ -836,6 +870,13 @@ function getViewTemplate(
                     <button class="theme-btn" data-theme="github-dark" title="GitHub Dark" onclick="setTheme('github-dark')">🐙</button>
                 </div>
                 <button class="header-btn" onclick="toggleFullscreen()">⛶</button>
+                <div class="export-wrapper" id="export-wrapper">
+                    <button class="header-btn" onclick="toggleExportMenu()" title="导出">📥</button>
+                    <div class="export-menu" id="export-menu">
+                        <button class="export-option" onclick="exportAsImage()">🖼️ 导出图片</button>
+                        <button class="export-option" onclick="exportAsPDF()">📄 导出 PDF</button>
+                    </div>
+                </div>
             </div>
         </header>
         <div class="content-wrapper">
@@ -1444,6 +1485,103 @@ function setTheme(theme) {
 
 loadContent().then(() => { checkForUpdates(); });
 setInterval(checkForUpdates, REFRESH_INTERVAL);
+
+// Export
+function toggleExportMenu() {
+    document.getElementById('export-menu').classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#export-wrapper')) {
+        document.getElementById('export-menu').classList.remove('open');
+    }
+});
+function _exportClone() {
+    const el = document.getElementById('markdown-content');
+    const clone = el.cloneNode(true);
+    clone.style.maxWidth = 'none';
+    clone.style.position = 'absolute';
+    clone.style.left = '-99999px';
+    clone.style.top = '0';
+    clone.style.width = el.parentElement.offsetWidth + 'px';
+    document.body.appendChild(clone);
+    return clone;
+}
+
+async function exportAsImage() {
+    toggleExportMenu();
+    const clone = _exportClone();
+    try {
+        const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim();
+        const canvas = await html2canvas(clone, { backgroundColor: bg, scale: 1.5, useCORS: true });
+        const a = document.createElement('a');
+        a.download = (document.getElementById('file-title').textContent || 'export') + '.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+    } finally {
+        clone.remove();
+    }
+}
+async function exportAsPDF() {
+    toggleExportMenu();
+    const clone = _exportClone();
+    try {
+        const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim();
+        const children = Array.from(clone.children);
+        const boundaries = children.map(c => ({
+            top: c.offsetTop,
+            bottom: c.offsetTop + c.offsetHeight
+        }));
+        const totalH = clone.scrollHeight;
+
+        const canvas = await html2canvas(clone, { backgroundColor: bg, scale: 1.5, useCORS: true });
+        const { jsPDF } = window.jspdf;
+        const margin = 10;
+        const pdfW = 210 - margin * 2;
+        const pdfH = (canvas.height * pdfW) / canvas.width;
+        const pxToPdf = pdfH / totalH;
+        const pageH = 297 - margin * 2;
+        const tolerance = 30 * pxToPdf;
+
+        const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+        let pos = 0;
+        let pageNum = 0;
+
+        while (pos < pdfH) {
+            if (pageNum > 0) pdf.addPage();
+            let cutAt = pos + pageH;
+
+            if (cutAt < pdfH) {
+                let best = cutAt;
+                for (const b of boundaries) {
+                    const bPdf = b.bottom * pxToPdf;
+                    if (bPdf > pos && bPdf <= cutAt && (cutAt - bPdf) <= tolerance) {
+                        best = bPdf;
+                    }
+                }
+                cutAt = best;
+            }
+
+            const sliceH = cutAt - pos;
+            const srcY = (pos / pdfH) * canvas.height;
+            const srcH = (sliceH / pdfH) * canvas.height;
+            const tmpCanvas = document.createElement('canvas');
+            tmpCanvas.width = canvas.width;
+            tmpCanvas.height = Math.ceil(srcH);
+            const tmpCtx = tmpCanvas.getContext('2d');
+            tmpCtx.fillStyle = bg || '#ffffff';
+            tmpCtx.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
+            tmpCtx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
+            const sliceImg = tmpCanvas.toDataURL('image/jpeg', 0.85);
+            pdf.addImage(sliceImg, 'JPEG', margin, margin, pdfW, sliceH);
+
+            pos = cutAt;
+            pageNum++;
+        }
+        pdf.save((document.getElementById('file-title').textContent || 'export') + '.pdf');
+    } finally {
+        clone.remove();
+    }
+}
 </script>
 </body>
 </html>`;
