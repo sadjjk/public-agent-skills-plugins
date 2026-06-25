@@ -1202,9 +1202,10 @@ function toggleFullscreen() {
 // File browser
 let browserDir = '';
 function getBrowseHistory() {
-    try { return JSON.parse(localStorage.getItem('md-viewer-browse-history') || '[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem('md-viewer-browse-history') || '[]').filter(d => typeof d === 'string' && d); } catch { return []; }
 }
 function saveBrowseHistory(dir) {
+    if (!dir || typeof dir !== 'string') return;
     let history = getBrowseHistory();
     history = history.filter(d => d !== dir);
     history.unshift(dir);
@@ -1247,8 +1248,8 @@ async function loadBrowserDir(dir) {
     try {
         const resp = await fetch('/api/browse?dir=' + encodeURIComponent(dir));
         const data = await resp.json();
-        browserDir = data.dir;
-        saveBrowseHistory(data.dir);
+        browserDir = data.dir || '';
+        if (data.dir) saveBrowseHistory(data.dir);
         renderQuickAccess();
         document.getElementById('browser-path').textContent = data.dir;
         const list = document.getElementById('browser-list');
