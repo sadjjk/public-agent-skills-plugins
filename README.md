@@ -54,6 +54,30 @@ AI Agent 的技能书和工具箱 —— 自研 Skills & Plugins + 开源收录�
   <td>💡 追问是种品质，答案从来不是终点<br/>→ 每轮回复后自动追加追问建议</td>
   <td>Skill版本-三层追问、触发词匹配、上下文紧张时可能会失效</td>
 </tr>
+</tr>
+</table>
+
+### 🏢 业务场景
+
+<table>
+<tr>
+  <th width="200">Skill</th>
+  <th width="300">说明</th>
+  <th>关键特性</th>
+</tr>
+<tr>
+  <td><a href="./skills/credit-risk-offline/">credit-risk-offline</a></td>
+  <td>🏦 拧螺丝一块钱 知道在哪拧九十九块<br/>→ 风控离线建模全流程辅助</td>
+  <td>用自然语言管理样本、特征、模型三层配置<br/>全流程标准化管理 CLI + Skill 分工协作<br/>
+  <table>
+  <tr><th>层</th><th>核心能力</th></tr>
+  <tr><td>📁 项目层</td><td>查看项目列表 / 新建项目</td></tr>
+  <tr><td>🗂 样本层</td><td>样本查询 / 添加 / 标签分析 / 报告 / 确认</td></tr>
+  <tr><td>🔧 特征层</td><td>特征查询 / 添加 / 漏斗式筛选 / 单特征探查 / 确认</td></tr>
+  <tr><td>🤖 模型层</td><td>模型查询 / 添加划分 / 训练评估 / 报告 / 定稿</td></tr>
+  </table>
+  </td>
+</tr>
 </table>
 
 ---
