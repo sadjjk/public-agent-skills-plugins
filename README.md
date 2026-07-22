@@ -26,8 +26,8 @@ AI Agent 的技能书和工具箱 —— 自研 Skills & Plugins + 开源收录�
 </tr>
 <tr>
   <td><a href="./skills/md-viewer/">md-viewer</a></td>
-  <td>✨ 给 Markdown 开扇窗<br/>→ 本地 Markdown 文件浏览器</td>
-  <td>Mermaid 图表、目录导航、图片放大、文件浏览<br/><img src="./skills/md-viewer/imgs/预览页.jpg" width="360" /></td>
+  <td>✨ 给 Markdown 开扇窗<br/>→ 本地 Markdown 文件浏览器 + 2.0 酷炫主题渲染</td>
+  <td>🎨 4 套主题（极光/杂志/卡通/黑白）、H2-H4 层级递减设计<br/><img src="./skills/md-viewer/imgs/预览页.jpg" width="360" /></td>
 </tr>
 <tr>
   <td><a href="./skills/au-viewer/">au-viewer</a></td>

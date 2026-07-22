@@ -46,18 +46,22 @@ cd $SKILL_DIR/server && npm install
 
 ### view — 查看 md 文件
 
+PORT端口获取：`cat $SKILL_DIR/config.json | grep -o '"port":[[:space:]]*[0-9]*' | grep -o '[0-9]*'
+
 1. **如果提供了文件路径**：
    a. 确认文件路径为绝对路径
-   b. 注册文件：`curl -s "http://localhost:PORT/api/register?path=ENCODED_ABS_PATH"`
-      返回 JSON 中的 id 字段即为文件 ID
-   c. 如果 server 未运行：`cd $SKILL_DIR/server && node viewer-server.js &`，等待 2 秒后重新注册
-   d. 打开浏览器：`open "http://localhost:PORT/i/{id}"`
+   b. 如果 server 未运行：`cd $SKILL_DIR/server && node viewer-server.js &`，等待 2 秒
+   c. 注册文件并打开浏览器（一步完成）：
+      ```bash
+      ID=$(curl -s "http://localhost:PORT/api/register?path=ENCODED_ABS_PATH" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+      open "http://localhost:PORT/i/${ID}"
+      ```
 
 2. **如果没有提供文件路径**：
    a. 如果 server 未运行：`cd $SKILL_DIR/server && node viewer-server.js &`，等待 2 秒
    b. 直接打开浏览器：`open "http://localhost:PORT"`
 
-端口获取：`cat $SKILL_DIR/config.json | grep -o '"port":[[:space:]]*[0-9]*' | grep -o '[0-9]*'`
+`
 
 ### stop — 关闭 viewer server
 

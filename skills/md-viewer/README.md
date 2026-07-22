@@ -52,6 +52,39 @@ HTML地址 : http://localhost:3456/i/4
 - **欢迎页**：无文件时显示引导页
 - **导出功能**：支持导出为 PNG 图片或 PDF 文件（A4 分页，智能断行）
 
+
+## 🎨 2.0 HTML 主题渲染
+
+自研 `md-to-web.js` 渲染引擎，不再依赖 marked CDN，实现结构化语义渲染。
+
+### 4 套设计主题
+
+| 主题 | 风格 | 适用场景 |
+|------|------|--------|
+| 极光玻璃 (Aurora Glass) | 毛玻璃 + 渐变发光 | 科技 SaaS / 技术文档 |
+| 杂志 (Magazine) | 衬线体 + 复古排版 | 长文阅读 / 博客 |
+| 新粗野 (Neo-Brutalism) | 粗边框 + 高对比 | 演示 / 课件 |
+| 瑞士黑白 (Swiss Mono) | 等宽 + 极简 | 代码文档 / 技术规范 |
+
+### 标题层级递减设计
+
+H2 → H3 → H4 视觉重量逐级递减：
+
+| 层级 | 标题样式 | 内容容器 |
+|------|---------|---------|
+| H2 | grid 编号 + 大字号 + 布局容器 | section 正文 |
+| H3 | 左竖线 + accent 色 + 内容缩进分组 | subsection-body 左细竖线 |
+| H4 | 轻底色容器 + 半透明竖线 + 淡装饰符 | sub-block-content 缩进 |
+
+### 语义增强渲染
+
+- **label-value 检测**：`**标签**: 值` 自动识别为 meta-grid 表格布局
+- **chat-message**：`>> role: content` 渲染为聊天气泡时间线
+- **工具调用标记**：`→ [type: content]` 渲染为工具调用卡片
+- **button 交互**：`[[button:文本]]` 渲染为可点击按钮
+- **scan-boundary**：扫描边界标记保留为 comment-marker
+- **KaTeX 数学公式**：本地 vendor，离线可用
+
 ## 🧪 Mermaid 图表
 
 流程图：
@@ -108,7 +141,6 @@ graph LR
 | marked 兼容 | v5 API | ✅ 适配 marked v15（解构参数） |
 | 中文路径图片 | ❌ | ✅ 修复 res.sendFile 编码问题 |
 | 导出功能 | ❌ | ✅ PNG 图片 + PDF 文件（A4 智能分页） |
-
 ## ⚠️ 依赖
 
 - **Node.js** 18+

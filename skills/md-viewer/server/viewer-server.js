@@ -110,6 +110,22 @@ app.use((req, res, next) => {
   next();
 });
 
+// Static serve md-to-web.js and css.js for browser-side rendering (before express.static to avoid 404)
+const MD_TO_WEB_DIR = path.join(__dirname, 'vendor');
+app.get('/md-to-web/md-to-web.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  let content = fs.readFileSync(path.join(MD_TO_WEB_DIR, 'md-to-web.js'), 'utf8');
+  // 去掉 shebang 行（浏览器不认识 #!）
+  if (content.startsWith('#!')) content = content.split('\n').slice(1).join('\n');
+  res.send(content);
+});
+app.get('/md-to-web/css.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.send(fs.readFileSync(path.join(MD_TO_WEB_DIR, 'css.js'), 'utf8'));
+});
+
 app.use(express.static(__dirname));
 
 // ===== API routes =====
@@ -262,6 +278,23 @@ app.get("/api/remove", (req, res) => {
   }
 });
 
+// Set file-specific theme
+app.get("/api/set-theme", (req, res) => {
+  try {
+    const id = parseInt(req.query.id);
+    const theme = req.query.theme;
+    if (!id || !theme) return res.status(400).json({ error: "id and theme required" });
+    const manifest = loadManifest();
+    const entry = manifest.files.find((f) => f.id === id);
+    if (!entry) return res.status(404).json({ error: "File not found" });
+    entry.theme = theme;
+    saveManifest(manifest);
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to set theme" });
+  }
+});
+
 // ===== Main route: /i/:id =====
 
 app.get("/i/:id", (req, res) => {
@@ -344,11 +377,16 @@ function getViewTemplate(
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${entry.name} — MD Viewer</title>
 
-    <script src="https://unpkg.com/marked@15.0.12/marked.min.js"></script>
-    <script src="https://unpkg.com/mermaid@11.6.0/dist/mermaid.min.js"></script>
-    <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script src="https://unpkg.com/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-    <style>
+    <link rel="stylesheet" href="/vendor/katex.min.css">
+    <script src="/vendor/marked.min.js"></script>
+    <script src="/vendor/mermaid.min.js"></script>
+    <script src="/vendor/katex.min.js"></script>
+    <script src="/vendor/auto-render.min.js"></script>
+    <script defer src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script defer src="https://unpkg.com/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+    <script src="/md-to-web/css.js"></script>
+    <script src="/md-to-web/md-to-web.js"></script>
+    <style id="md-css">
         :root {
             --bg-primary: #0d1117;
             --bg-secondary: #161b22;
@@ -434,7 +472,8 @@ function getViewTemplate(
             line-height: 1.7;
             display: flex;
             height: 100vh;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: visible;
         }
 
         /* Sidebar */
@@ -570,18 +609,18 @@ function getViewTemplate(
             flex: 1;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow: visible;
         }
 
         /* Header */
         .app-header {
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border-color);
-            padding: 10px 20px;
+            padding: 8px 16px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            min-height: 48px;
+            gap: 10px;
+            min-height: 44px;
         }
         .sidebar-expand-btn {
             background: none;
@@ -591,15 +630,33 @@ function getViewTemplate(
             font-size: 18px;
             padding: 4px 8px;
             display: none;
+            flex-shrink: 0;
         }
         .sidebar.collapsed ~ .main-area .sidebar-expand-btn { display: block; }
         .app-header h1 {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
             color: var(--accent);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            flex-shrink: 1;
+            min-width: 0;
+        }
+        .status-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .status-dot.live { background: var(--accent); }
+        .status-dot.offline { background: #f85149; }
+        .header-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-shrink: 0;
+            flex-wrap: nowrap;
         }
         .header-path {
             font-size: 11px;
@@ -607,58 +664,64 @@ function getViewTemplate(
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            max-width: 600px;
-            opacity: 0.7;
+            flex: 0 1 600px;
+            min-width: 0;
+            opacity: 0.6;
         }
-        .status-dot {
-            width: 7px; height: 7px; border-radius: 50%;
-            display: inline-block;
-        }
-        .status-dot.live { background: var(--accent); }
-        .status-dot.offline { background: #f85149; }
-        .header-actions {
-            margin-left: auto;
-            display: flex;
-            gap: 4px;
-            align-items: center;
-        }
-        .header-btn {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        .header-btn:hover { background: var(--accent-dark); color: #000; }
-        .theme-switcher {
-            display: flex;
-            gap: 2px;
-        }
-        .theme-btn {
+        /* Unified button styles */
+        .header-btn, .search-toggle {
             background: none;
             border: none;
+            color: var(--text-secondary);
+            padding: 5px 8px;
+            border-radius: 5px;
             cursor: pointer;
-            font-size: 14px;
-            padding: 3px 4px;
-            border-radius: 4px;
-            opacity: 0.5;
+            font-size: 13px;
+            opacity: 0.55;
             transition: opacity 0.15s, background 0.15s;
         }
-        .theme-btn:hover { opacity: 0.9; background: var(--bg-tertiary); }
-        .theme-btn.active { opacity: 1; background: var(--bg-tertiary); }
+        .header-btn:hover, .search-toggle:hover { opacity: 1; background: var(--accent-10); }
+        .header-btn:active, .search-toggle:active { opacity: 1; background: var(--accent-20); }
+        /* Theme select dropdowns */
+        .theme-select {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 4px 6px;
+            border-radius: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.15s, border-color 0.15s;
+        }
+        .theme-select:hover { opacity: 1; border-color: var(--accent); }
+        .theme-select:focus { outline: none; border-color: var(--accent); opacity: 1; }
+        .theme-select optgroup {
+            font-style: normal;
+            font-weight: 600;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        .theme-select option { font-size: 12px; padding: 2px 0; }
+        /* Search */
+        .search-toggle.active { opacity: 1; background: var(--accent-20); color: var(--accent); }
+        .search-container {
+            display: none;
+            align-items: center;
+            gap: 4px;
+        }
+        .search-container.open { display: flex; }
         .search-input {
-            background: var(--bg-primary);
+            background: transparent;
             border: 1px solid var(--border-color);
             color: var(--text-primary);
             padding: 5px 10px;
             border-radius: 4px;
             font-size: 12px;
-            width: 160px;
+            width: 140px;
         }
         .search-input:focus { outline: none; border-color: var(--accent); }
-        #search-count { font-size: 11px; color: var(--text-secondary); }
+        #search-count { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
 
         /* TOC */
         .toc-btn {
@@ -762,7 +825,7 @@ function getViewTemplate(
             overflow-y: auto;
             padding: 28px 32px;
         }
-        .markdown-body { max-width: 900px; margin: 0 auto; }
+        .markdown-body { max-width: 1080px; margin: 0 auto; transition: opacity 0.15s; }
         .markdown-body h1 { color: var(--accent); font-size: 26px; margin: 24px 0 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
         .markdown-body h2 { color: var(--accent-light); font-size: 20px; margin: 20px 0 10px; }
         .markdown-body h3 { color: #c792ea; font-size: 17px; margin: 16px 0 8px; }
@@ -862,14 +925,25 @@ function getViewTemplate(
             <h1 id="file-title">${entry.name}</h1>
             <span class="header-path" id="header-path">${entry.path}</span>
             <div class="header-actions">
-                <input type="text" class="search-input" id="search-input" placeholder="Search..." />
-                <span id="search-count"></span>
-                <div class="theme-switcher" id="theme-switcher">
-                    <button class="theme-btn" data-theme="dark-sage" title="Dark Sage" onclick="setTheme('dark-sage')">🌿</button>
-                    <button class="theme-btn" data-theme="light" title="Light" onclick="setTheme('light')">☀️</button>
-                    <button class="theme-btn" data-theme="github-dark" title="GitHub Dark" onclick="setTheme('github-dark')">🐙</button>
+                <div class="search-container" id="search-container">
+                    <input type="text" class="search-input" id="search-input" placeholder="搜索..." />
+                    <span id="search-count"></span>
                 </div>
-                <button class="header-btn" onclick="toggleFullscreen()">⛶</button>
+                <button class="search-toggle" id="search-toggle" onclick="toggleSearch()" title="搜索">🔍</button>
+                <select class="theme-select" id="theme-select" onchange="onThemeChange(this.value)">
+                    <optgroup label="MD主题">
+                        <option value="md:dark-sage">护眼</option>
+                        <option value="md:light">亮色</option>
+                        <option value="md:github-dark">暗色</option>
+                    </optgroup>
+                    <optgroup label="HTML主题">
+                        <option value="html:aurora-glass">极光</option>
+                        <option value="html:magazine">杂志</option>
+                        <option value="html:neo-brutalism">卡通</option>
+                        <option value="html:swiss-mono">黑白</option>
+                    </optgroup>
+                </select>
+                <button class="header-btn" onclick="toggleFullscreen()" title="全屏">⛶</button>
                 <div class="export-wrapper" id="export-wrapper">
                     <button class="header-btn" onclick="toggleExportMenu()" title="导出">📥</button>
                     <div class="export-menu" id="export-menu">
@@ -914,6 +988,7 @@ function getViewTemplate(
 let currentId = ${entry.id};
 let currentPath = '${entry.path.replace(/'/g, "\\'")}';
 let currentDir = '${fileDir.replace(/'/g, "\\'")}';
+let currentTheme = '${entry.theme || ""}';
 const REFRESH_INTERVAL = ${refreshInterval};
 const BROWSE_HISTORY_LIMIT = ${browseHistoryLimit};
 let lastMtime = null;
@@ -956,8 +1031,16 @@ async function loadContent() {
         document.getElementById('file-title').textContent = data.name;
         document.getElementById('header-path').textContent = currentPath;
         document.title = data.name + ' — MD Viewer';
+        currentFileText = data.content;
         let html = marked.parse(data.content);
-        document.getElementById('markdown-content').innerHTML = html;
+        const contentEl = document.getElementById('markdown-content');
+        contentEl.style.opacity = '0';
+        contentEl.innerHTML = html;
+        // KaTeX 渲染数学公式
+        if (typeof renderMathInElement === 'function') {
+          renderMathInElement(contentEl, { delimiters: [ {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false} ], throwOnError: false });
+        }
+        requestAnimationFrame(() => { contentEl.style.opacity = '1'; });
 
         // Fix HTML <img> relative src → /api/image?path=
         document.querySelectorAll('#markdown-content img').forEach(img => {
@@ -992,6 +1075,27 @@ async function loadContent() {
     }
 }
 
+// 主题随机池
+const ALL_THEMES = ['md:dark-sage','md:light','md:github-dark','html:aurora-glass','html:magazine','html:neo-brutalism','html:swiss-mono'];
+
+// 应用主题（统一入口）
+function applyTheme(themeVal) {
+    if (!themeVal) return;
+    const [type, name] = themeVal.split(':');
+    if (type === 'md') {
+        setTheme(name);
+    } else if (type === 'html') {
+        switchHtmlTheme(name);
+    }
+}
+
+// 保存主题到文件 entry
+async function saveThemeToFile(id, themeVal) {
+    try {
+        await fetch('/api/set-theme?id=' + id + '&theme=' + encodeURIComponent(themeVal));
+    } catch (e) { console.error('saveTheme failed:', e); }
+}
+
 // Navigate to file by hash (sidebar click or URL)
 async function navigateTo(id) {
     try {
@@ -1003,6 +1107,7 @@ async function navigateTo(id) {
         currentId = id;
         currentPath = entry.path;
         currentDir = entry.path.substring(0, entry.path.lastIndexOf('/'));
+        currentTheme = entry.theme || '';
         lastMtime = null;
 
         // Update sidebar active state
@@ -1028,8 +1133,50 @@ async function navigateTo(id) {
         // Update URL without reload
         history.pushState({ id }, '', '/i/' + id);
 
-        // Load content
-        await loadContent();
+        // 应用主题：有指定用指定的，没有随机一个并保存
+        if (!currentTheme) {
+            currentTheme = ALL_THEMES[Math.floor(Math.random() * ALL_THEMES.length)];
+            saveThemeToFile(id, currentTheme);
+        }
+        // 加载内容 + 应用主题
+        // HTML 主题：只 fetch 缓存原文，跳过 markdown 渲染，直接走 switchHtmlTheme（避免双重 innerHTML 替换闪烁）
+        if (currentTheme.startsWith('html:')) {
+            const resp = await fetch('/api/file?path=' + encodeURIComponent(currentPath));
+            if (!resp.ok) throw new Error('Failed: ' + resp.status);
+            const data = await resp.json();
+            currentFileText = data.content;
+            document.getElementById('file-title').textContent = data.name;
+            document.getElementById('header-path').textContent = currentPath;
+            document.title = data.name + ' — MD Viewer';
+            document.getElementById('status-dot').className = 'status-dot live';
+            // 清理旧 HTML 模式的事件监听（但不删 style 元素，由 switchHtmlTheme 原地替换内容）
+            if (window._htmlScrollHandler) {
+                const sc = document.querySelector('.content-wrapper');
+                if (sc) sc.removeEventListener('scroll', window._htmlScrollHandler);
+                window._htmlScrollHandler = null;
+            }
+            if (window._htmlTocObs) { window._htmlTocObs.disconnect(); window._htmlTocObs = null; }
+            currentMode = 'html';
+            await switchHtmlTheme(currentTheme.split(':')[1]);
+            buildToc();
+            bindImageLightbox();
+        } else {
+            // 切到 MD 主题：清理 HTML 模式残留
+            if (currentMode === 'html') {
+                currentMode = 'md';
+                if (window._htmlScrollHandler) {
+                    const sc = document.querySelector('.content-wrapper');
+                    if (sc) sc.removeEventListener('scroll', window._htmlScrollHandler);
+                    window._htmlScrollHandler = null;
+                }
+                if (window._htmlTocObs) { window._htmlTocObs.disconnect(); window._htmlTocObs = null; }
+                const htmlStyle = document.getElementById('html-css');
+                if (htmlStyle) htmlStyle.remove();
+                currentHtmlTheme = '';
+            }
+            await loadContent();
+            applyTheme(currentTheme);
+        }
         checkForUpdates();
     } catch (e) {
         console.error('Navigate failed:', e);
@@ -1075,6 +1222,7 @@ function toggleSidebar() {
     const sb = document.getElementById('sidebar');
     sb.classList.toggle('collapsed');
     document.getElementById('expand-btn').style.display = sb.classList.contains('collapsed') ? 'block' : 'none';
+    updateBottomBarPosition();
 }
 
 // Sidebar resize
@@ -1093,6 +1241,7 @@ function toggleSidebar() {
         const newWidth = Math.min(Math.max(e.clientX, 160), 480);
         sidebar.style.width = newWidth + 'px';
         sidebar.style.minWidth = newWidth + 'px';
+        updateBottomBarPosition();
     });
     document.addEventListener('mouseup', function() {
         if (!isResizing) return;
@@ -1373,7 +1522,7 @@ let lbScale = 1, lbX = 0, lbY = 0, lbDragging = false, lbStartX = 0, lbStartY = 
 function bindImageLightbox() {
     document.querySelectorAll('.markdown-body img').forEach(img => {
         img.onclick = function() {
-            lbScale = 1; lbX = 0; lbY = 0;
+            lbScale = 1; lbX = 0; lbY = 0; lbTargetY = 0;
             const lbImg = document.getElementById('img-lightbox-img');
             lbImg.src = this.src;
             lbImg.style.transform = '';
@@ -1399,7 +1548,7 @@ function lbZoom(factor) {
     updateLightboxTransform();
 }
 function lbReset() {
-    lbScale = 1; lbX = 0; lbY = 0;
+    lbScale = 1; lbX = 0; lbY = 0; lbTargetY = 0;
     updateLightboxTransform();
 }
 // Double click to toggle fit/original
@@ -1412,6 +1561,32 @@ document.getElementById('img-lightbox-img').addEventListener('dblclick', functio
     }
     updateLightboxTransform();
 });
+// Wheel: smooth vertical pan only when zoomed in
+let lbTargetY = 0, lbAnimId = null;
+function clampPan() {
+    const vh = window.innerHeight;
+    const maxY = Math.max(0, (lbScale - 1) * vh / 2);
+    lbX = 0;
+    lbY = Math.min(maxY, Math.max(-maxY, lbY));
+    lbTargetY = lbY;
+}
+function animatePan() {
+    lbAnimId = null;
+    lbY += (lbTargetY - lbY) * 0.35;
+    if (Math.abs(lbTargetY - lbY) < 0.5) lbY = lbTargetY;
+    else lbAnimId = requestAnimationFrame(animatePan);
+    updateLightboxTransform();
+}
+document.getElementById('img-lightbox-img').addEventListener('wheel', function(e) {
+    e.preventDefault();
+    if (lbScale <= 1) return;
+    lbTargetY -= e.deltaY * 0.6;
+    const vh = window.innerHeight;
+    const maxY = Math.max(0, (lbScale - 1) * vh / 2);
+    lbTargetY = Math.min(maxY, Math.max(-maxY, lbTargetY));
+    lbX = 0;
+    if (!lbAnimId) lbAnimId = requestAnimationFrame(animatePan);
+}, { passive: false });
 // Drag to pan
 document.getElementById('img-lightbox-img').addEventListener('mousedown', function(e) {
     e.stopPropagation();
@@ -1469,22 +1644,267 @@ function setupTocObserver() {
     headings.forEach(h => tocObserver.observe(h));
 }
 
+// Search toggle
+function toggleSearch() {
+    const container = document.getElementById('search-container');
+    const toggle = document.getElementById('search-toggle');
+    const input = document.getElementById('search-input');
+    container.classList.toggle('open');
+    toggle.classList.toggle('active');
+    if (container.classList.contains('open')) {
+        input.focus();
+    } else {
+        if (input.value) { input.value = ''; clearSearch(); }
+    }
+}
+
 // Theme switching
 function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('md-viewer-theme', theme);
-    document.querySelectorAll('.theme-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.theme === theme);
-    });
+    syncThemeSelect();
 }
+
+// Unified theme handler
+async function onThemeChange(value) {
+    if (!value) return;
+    currentTheme = value;
+    applyTheme(value);
+    // 保存到当前文件 entry（确保完成）
+    if (currentId > 0) {
+        try { await saveThemeToFile(currentId, value); } catch(e) { console.error('saveTheme:', e); }
+    }
+}
+
+// Sync select to current state
+function syncThemeSelect() {
+    const sel = document.getElementById('theme-select');
+    if (!sel) return;
+    if (currentMode === 'html' && currentHtmlTheme) {
+        sel.value = 'html:' + currentHtmlTheme;
+    } else {
+        const saved = localStorage.getItem('md-viewer-theme') || 'light';
+        sel.value = 'md:' + saved;
+    }
+}
+
+// HTML 主题切换（客户端渲染 + CSS 互斥切换）
+let currentMode = 'md'; // 'md' | 'html'
+let currentHtmlTheme = localStorage.getItem('md-viewer-html-theme') || '';
+let currentFileText = ''; // 缓存当前文件文本
+
+async function switchHtmlTheme(themeName) {
+    // 首次切换到 HTML 模式：currentFileText 已由 loadContent 缓存
+    if (currentMode !== 'html') {
+        currentMode = 'html';
+    }
+
+    // 客户端渲染
+    const tokens = parseMdTokens(currentFileText);
+    const pageData = tokensToStructured(tokens);
+    const cssText = window.__mdToWebCSS.getCss();
+    const fileName = currentPath.split('/').pop();
+    const fullHtml = buildFullHtml(pageData, themeName, { cssText, fileName, skipDemoBar: true });
+
+    // 用 DOMParser 解析生成的 HTML（避免模板字符串吃反斜杠 + 避免正则匹配 script 闭合标签截断）
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(fullHtml, 'text/html');
+
+    // 提取 <style> 内容
+    const styleEl = doc.querySelector('style');
+    const styleContent = styleEl ? styleEl.textContent : '';
+
+    // 提取 <body> 内容（去掉 script 标签和重复的 img-lightbox）
+    doc.querySelectorAll('script').forEach(s => s.remove());
+    doc.querySelectorAll('#img-lightbox').forEach(el => el.remove());
+    const bodyContent = doc.body ? doc.body.innerHTML : '';
+
+    // CSS 作用域隔离：HTML CSS 只作用于 #markdown-content，不干扰侧边栏/header 等
+    // 不禁用 #md-css（它管全局 UI），只用 scoped style 覆盖内容区
+    let htmlStyle = document.getElementById('html-css');
+    if (!htmlStyle) {
+        htmlStyle = document.createElement('style');
+        htmlStyle.id = 'html-css';
+        document.head.appendChild(htmlStyle);
+    }
+    htmlStyle.textContent = '#markdown-content { all: unset; color: revert; } ' + styleContent;
+
+    // 不禁用 MD CSS — 侧边栏/header/search/lightbox 继续用
+    // 但 #markdown-content 的样式被 html-css 覆盖
+    const contentArea = document.getElementById('markdown-content');
+    if (contentArea) contentArea.innerHTML = bodyContent;
+
+    // KaTeX 渲染
+    if (typeof renderMathInElement === 'function') {
+      renderMathInElement(contentArea, { delimiters: [ {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false} ], throwOnError: false });
+    }
+
+    // 设置 data-theme
+    document.documentElement.setAttribute('data-theme', themeName);
+
+    // 先更新状态
+    currentHtmlTheme = themeName;
+    localStorage.setItem('md-viewer-html-theme', themeName);
+
+    // 再同步 select（读的是 currentHtmlTheme，必须在更新之后）
+    syncThemeSelect();
+
+    // 注入后初始化：dot-nav 导航高亮、底部进度条、图片灯箱、代码高亮
+    postHtmlInject();
+    updateBottomBarPosition();
+}
+
+// HTML 主题注入后初始化：dot-nav 导航高亮、底部进度条、图片灯箱、代码高亮
+function postHtmlInject() {
+    const scope = document.getElementById('markdown-content');
+    if (!scope) return;
+    const sc = document.querySelector('.content-wrapper'); // 滚动容器
+
+    // HTML <img> 相对路径重写：通过 /api/image 代理
+    scope.querySelectorAll('img').forEach(img => {
+        const src = img.getAttribute('src');
+        if (src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('data:') && !src.startsWith('/api/')) {
+            let absPath;
+            if (src.startsWith('/')) absPath = src;
+            else { let p = src; while (p.startsWith('./')) p = p.slice(2); while (p.startsWith('../')) p = p.slice(3); absPath = currentDir + '/' + p; }
+            img.setAttribute('src', '/api/image?path=' + encodeURIComponent(absPath));
+        }
+    });
+
+    // dot-nav 高亮
+    const dots = scope.querySelectorAll('.dot-nav a');
+    if (dots.length > 0) {
+        const ids = ['top', ...[...scope.querySelectorAll('.web-section')].map(s => s.id)];
+        if (window._htmlTocObs) window._htmlTocObs.disconnect();
+        window._htmlTocObs = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    dots.forEach(a => a.classList.toggle('active', a.dataset.target === e.target.id));
+                }
+            });
+        }, { root: sc, rootMargin: '0px 0px -60% 0px' });
+        ids.forEach(id => {
+            const el = scope.querySelector('#' + id);
+            if (el) window._htmlTocObs.observe(el);
+        });
+        if (dots[0]) dots[0].classList.add('active');
+    }
+
+    // dot-nav 点击跳转
+    dots.forEach(a => {
+        a.onclick = function(e) {
+            e.preventDefault();
+            const target = scope.querySelector('#' + a.dataset.target);
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+    });
+
+    // 底部进度条
+    const main = scope.querySelector('main');
+    if (main && sc) {
+        const totalText = main.innerText || '';
+        const totalLen = totalText.replace(/\s/g, '').length;
+        const readMin = Math.max(1, Math.ceil(totalLen / 500));
+        const fmt = n => n.toLocaleString('en-US');
+        const bbChars = scope.querySelector('#bb-chars');
+        const bbRead = scope.querySelector('#bb-read');
+        const bbPos = scope.querySelector('#bb-pos');
+        const bbPct = scope.querySelector('#bb-pct');
+        const bbBar = scope.querySelector('#bb-bar');
+        if (bbChars) bbChars.textContent = '字数 ' + fmt(totalLen);
+        if (bbRead) bbRead.textContent = '预计阅读 ' + readMin + ' 分钟';
+        if (bbPos) { bbPos.textContent = '第 0 字 / 共 ' + fmt(totalLen) + ' 字'; bbPos.title = '第 0 字 / 共 ' + fmt(totalLen) + ' 字'; }
+        if (window._htmlScrollHandler) sc.removeEventListener('scroll', window._htmlScrollHandler);
+        window._htmlScrollHandler = function() {
+            const scrollH = sc.scrollHeight;
+            const clientH = sc.clientHeight;
+            const scrollTop = sc.scrollTop;
+            const maxScroll = scrollH - clientH;
+            const pct = maxScroll > 0 ? Math.min(1, scrollTop / maxScroll) : 0;
+            const curChar = Math.round(pct * totalLen);
+            if (bbPos) { bbPos.textContent = '第 ' + fmt(curChar) + ' 字 / 共 ' + fmt(totalLen) + ' 字'; bbPos.title = '第 ' + fmt(curChar) + ' 字 / 共 ' + fmt(totalLen) + ' 字'; }
+            if (bbPct) bbPct.textContent = Math.round(pct * 100) + '%';
+            if (bbBar) bbBar.style.width = Math.round(pct * 100) + '%';
+        };
+        sc.addEventListener('scroll', window._htmlScrollHandler, { passive: true });
+        window._htmlScrollHandler();
+    }
+
+    // 图片灯箱（HTML 主题内）
+    scope.querySelectorAll('.md-image img').forEach(img => {
+        img.onclick = function() {
+            lbScale = 1; lbX = 0; lbY = 0; lbTargetY = 0;
+            const lbImg = document.getElementById('img-lightbox-img');
+            lbImg.src = this.src;
+            lbImg.style.transform = '';
+            updateZoomLevel();
+            document.getElementById('img-lightbox').classList.add('open');
+        };
+    });
+
+    // 代码高亮
+    if (typeof hljs !== 'undefined') hljs.highlightAll();
+
+    // Mermaid 图表渲染（HTML 主题内的 mermaid div）
+    const mermaidDivs = scope.querySelectorAll('.mermaid');
+    if (mermaidDivs.length > 0 && typeof mermaid !== 'undefined') {
+        mermaid.run({ nodes: mermaidDivs });
+    }
+}
+
+// 底部进度条位置：跟随 sidebar 展开/折叠/调宽
+function updateBottomBarPosition() {
+    const bb = document.getElementById('bottom-bar');
+    if (!bb) return;
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) { bb.style.left = '0'; return; }
+    if (sidebar.classList.contains('collapsed')) {
+        bb.style.left = '0';
+    } else {
+        bb.style.left = sidebar.offsetWidth + 'px';
+    }
+}
+
+// MD 主题选择时，如果在 HTML 模式，先切回 MD 模式
+const _originalSetTheme = setTheme;
+setTheme = function(theme) {
+    if (currentMode === 'html') {
+        // 切回 MD 模式
+        currentMode = 'md';
+        // 清理 HTML 模式的 scroll listener 和 observer
+        if (window._htmlScrollHandler) {
+            const sc = document.querySelector('.content-wrapper');
+            if (sc) sc.removeEventListener('scroll', window._htmlScrollHandler);
+            window._htmlScrollHandler = null;
+        }
+        if (window._htmlTocObs) { window._htmlTocObs.disconnect(); window._htmlTocObs = null; }
+        const htmlStyle = document.getElementById('html-css');
+        if (htmlStyle) htmlStyle.remove();
+        document.documentElement.setAttribute('data-theme', theme);
+        currentHtmlTheme = '';
+        localStorage.removeItem('md-viewer-html-theme');
+        syncThemeSelect();
+        loadContent();
+    }
+    _originalSetTheme(theme);
+};
 
 // Init
 (function() {
-    const saved = localStorage.getItem('md-viewer-theme') || 'light';
-    setTheme(saved);
+    // 首次打开：如果有指定主题用指定的，否则随机
+    if (!currentTheme) {
+        currentTheme = ALL_THEMES[Math.floor(Math.random() * ALL_THEMES.length)];
+        if (currentId > 0) saveThemeToFile(currentId, currentTheme);
+    }
 })();
-
-loadContent().then(() => { checkForUpdates(); });
+loadContent().then(() => {
+    // loadContent 完成后再应用主题，避免 MD 渲染覆盖 HTML 主题内容
+    applyTheme(currentTheme);
+    if (currentTheme.startsWith('html:')) {
+        setTimeout(updateBottomBarPosition, 100);
+    }
+    checkForUpdates();
+});
 setInterval(checkForUpdates, REFRESH_INTERVAL);
 
 // Export
@@ -1582,6 +2002,37 @@ async function exportAsPDF() {
     } finally {
         clone.remove();
     }
+}
+</script>
+<script>
+// 代码块复制按钮
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('code-copy-btn')) {
+    var btn = e.target;
+    var code = btn.closest('.code-block').querySelector('code');
+    if (!code) return;
+    var text = code.textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        btn.textContent = '已复制';
+        btn.classList.add('copied');
+        setTimeout(function() { btn.textContent = '复制'; btn.classList.remove('copied'); }, 1500);
+      }).catch(function() { fallbackCopy(btn, text); });
+    } else { fallbackCopy(btn, text); }
+  }
+});
+function fallbackCopy(btn, text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+  btn.textContent = '已复制';
+  btn.classList.add('copied');
+  setTimeout(function() { btn.textContent = '复制'; btn.classList.remove('copied'); }, 1500);
 }
 </script>
 </body>
