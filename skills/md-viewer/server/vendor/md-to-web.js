@@ -360,7 +360,7 @@ function tokensToStructured(tokens) {
 
     // H3+ (或无 H1/H2/H3 时的 H4+): 无 cur 或同级标题 → 新 section；有 cur 且更深层级 → 子项
     if (t.type === 'heading' && t.depth >= sectionDepth) {
-      if (!cur || t.depth <= cur.titleDepth || t.depth <= sectionDepth) {
+      if (!cur || !cur.title || t.depth <= cur.titleDepth || t.depth <= sectionDepth) {
         // 同级或更高级 → 关闭旧 section，创建新 section
         // 从标题提取时间徽章（如 "08:56~17:22 - 项目名"）
         const tbMatch = t.text.match(/^(\d{2}:\d{2})~(\d{2}:\d{2})\s*[-–]\s*(.+)$/);
