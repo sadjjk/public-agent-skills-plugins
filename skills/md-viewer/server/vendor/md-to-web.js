@@ -619,7 +619,7 @@ function detectSectionType(tokens, startIdx, sectionTitle) {
 }
 
 function isFaqSection(title) { return /faq|问答|常见问题|疑问/i.test(title); }
-function slugify(text) { return text.toLowerCase().replace(/<[^>]*>/g, '').replace(/[^\w\u4e00-\u9fff]+/g, '-').replace(/(^-|-$)/g, ''); }
+function slugify(text) { return 'sec-' + text.toLowerCase().replace(/<[^>]*>/g, '').replace(/[^\w\u4e00-\u9fff]+/g, '-').replace(/(^-|-$)/g, ''); }
 
 // ══════════════════════════════════════════════════════
 // Step 3: JSON → HTML（模板渲染）
@@ -866,7 +866,7 @@ function renderBlockItem(b) {
   if (b.kind === 'tool-list') return renderToolGrid(b);
   if (b.kind === 'file-list') return renderFileList(b);
   if (b.kind === 'code') {
-    if (b.lang === 'mermaid') return '<div class="mermaid">' + escapeHtml(b.text) + '</div>';
+    if (b.lang === 'mermaid') return '<div class="mermaid">' + b.text + '</div>';
     return renderCodeBlock(b.lang, b.text);
   }
   if (b.kind === 'table') return renderTableBlock(b);

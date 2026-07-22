@@ -1056,15 +1056,17 @@ async function loadContent() {
             }
         });
 
-        // Mermaid
-        document.querySelectorAll('.language-mermaid').forEach(block => {
-            const parent = block.parentElement;
-            const div = document.createElement('div');
-            div.className = 'mermaid';
-            div.textContent = block.textContent;
-            parent.replaceWith(div);
-        });
-        if (typeof mermaid !== 'undefined') mermaid.run();
+        // Mermaid（HTML 主题由 postHtmlInject 单独渲染，跳过避免 DOM 替换后异步引用 null）
+        if (!currentTheme.startsWith('html:')) {
+            document.querySelectorAll('.language-mermaid').forEach(block => {
+                const parent = block.parentElement;
+                const div = document.createElement('div');
+                div.className = 'mermaid';
+                div.textContent = block.textContent;
+                parent.replaceWith(div);
+            });
+            if (typeof mermaid !== 'undefined') mermaid.run();
+        }
 
         document.getElementById('status-dot').className = 'status-dot live';
         buildToc();
@@ -1270,7 +1272,16 @@ async function checkForUpdates() {
         if (!resp.ok) return;
         const data = await resp.json();
         if (lastMtime !== null && data.mtime !== lastMtime) {
-            loadContent();
+            if (currentMode === 'html' && currentHtmlTheme) {
+                const resp2 = await fetch('/api/file?path=' + encodeURIComponent(currentPath));
+                if (resp2.ok) {
+                    const d = await resp2.json();
+                    currentFileText = d.content;
+                    await switchHtmlTheme(currentHtmlTheme);
+                }
+            } else {
+                loadContent();
+            }
         }
         lastMtime = data.mtime;
     } catch {}
@@ -1727,7 +1738,7 @@ async function switchHtmlTheme(themeName) {
         htmlStyle.id = 'html-css';
         document.head.appendChild(htmlStyle);
     }
-    htmlStyle.textContent = '#markdown-content { all: unset; color: revert; } ' + styleContent;
+    htmlStyle.textContent = '#markdown-content { all: revert; } ' + styleContent;
 
     // 不禁用 MD CSS — 侧边栏/header/search/lightbox 继续用
     // 但 #markdown-content 的样式被 html-css 覆盖
@@ -1784,7 +1795,7 @@ function postHtmlInject() {
             });
         }, { root: sc, rootMargin: '0px 0px -60% 0px' });
         ids.forEach(id => {
-            const el = scope.querySelector('#' + id);
+            const el = scope.querySelector(CSS.escape ? '#' + CSS.escape(id) : '#' + id);
             if (el) window._htmlTocObs.observe(el);
         });
         if (dots[0]) dots[0].classList.add('active');
@@ -1794,7 +1805,7 @@ function postHtmlInject() {
     dots.forEach(a => {
         a.onclick = function(e) {
             e.preventDefault();
-            const target = scope.querySelector('#' + a.dataset.target);
+            const target = scope.querySelector(CSS.escape ? '#' + CSS.escape(a.dataset.target) : '#' + a.dataset.target);
             if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         };
     });
@@ -1847,8 +1858,18 @@ function postHtmlInject() {
 
     // Mermaid 图表渲染（HTML 主题内的 mermaid div）
     const mermaidDivs = scope.querySelectorAll('.mermaid');
-    if (mermaidDivs.length > 0 && typeof mermaid !== 'undefined') {
-        mermaid.run({ nodes: mermaidDivs });
+    if (mermaidDivs.length > 0) {
+        const renderMermaid = () => {
+            if (typeof mermaid !== 'undefined') {
+                mermaid.initialize({ startOnLoad: false, theme: 'default' });
+                requestAnimationFrame(() => {
+                    mermaid.run({ nodes: mermaidDivs }).catch(e => console.error('Mermaid render error:', e));
+                });
+            } else {
+                setTimeout(renderMermaid, 200);
+            }
+        };
+        renderMermaid();
     }
 }
 
