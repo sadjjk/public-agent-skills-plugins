@@ -194,9 +194,9 @@ function parseMdTokens(md) {
       i++; while (i < lines.length && !/-->$/.test(lines[i].trim())) i++; i++; continue;
     }
     // 普通段落（可能含内联图片）
-    // 统计行单独收集：📊/📏/🔁/🤖/⏱/🛠/📖 开头的行逐行处理
-    if (/^[📊📏🔁🤖⏱🛠📖]/.test(line.trim())) {
-      while (i < lines.length && /^[📊📏🔁🤖⏱🛠📖]/.test(lines[i].trim())) {
+    // 统计行单独收集：首行 emoji+空格+**加粗** 才触发，后续连续 emoji 行一并收集
+    if (/^\p{Extended_Pictographic}\s+\*\*/u.test(line.trim())) {
+      while (i < lines.length && /^\p{Extended_Pictographic}/u.test(lines[i].trim())) {
         tokens.push({ type: 'stat-line', text: lines[i].trim() });
         i++;
       }
@@ -222,6 +222,7 @@ function tokensToStructured(tokens) {
   const sections = [];
   let cur = null;
   let isFirstH1 = true;
+  let pendingScanLabel = null;
 
   // 最小 heading depth 决定 section 标题层级：有 H1/H2 时用其层级，否则至少 H3
   const minDepth = Math.min(...tokens.filter(t => t.type === 'heading').map(t => t.depth));
@@ -260,6 +261,7 @@ function tokensToStructured(tokens) {
     if (t.type === 'scan-boundary') {
       const label = t.raw || (t.boundary === 'start' ? 'SCAN:START' : 'SCAN:END');
       if (cur) cur.blocks.push({ kind: 'comment-marker', text: label });
+      else if (t.boundary === 'start') pendingScanLabel = label; // cur 为 null 时缓存，等 chat-message 创建 section 后补
       if (t.boundary === 'end' && cur) { cur = null; }
       continue;
     }
@@ -271,6 +273,7 @@ function tokensToStructured(tokens) {
         const logCount = sections.filter(s => s.type === 'chat-log').length;
         const seq = logCount + 1;
         cur = { type: 'chat-log', anchor: `session-log-${seq}`, title: `对话记录 ${String(seq).padStart(2, '0')}`, titleDepth: 2, intro: '', blocks: [], quotes: [], images: [] };
+        if (pendingScanLabel) { cur.blocks.push({ kind: 'comment-marker', text: pendingScanLabel }); pendingScanLabel = null; }
         sections.push(cur);
       }
       // 规则 3 泛化: 按 --- 分段
@@ -638,7 +641,7 @@ function renderInline(text) {
     codes.push(escapeHtml(code));
     return `%%INLINECODE_${codes.length - 1}%%`;
   });
-  result = result
+  result = escapeHtml(result)
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, src) => {
@@ -777,8 +780,6 @@ function renderBlocksEnhanced(text) {
     }
     if (p.startsWith('|') && p.split('\n').length >= 2) return renderTable(p);
     if (isKeyValueBlock(p)) return renderKeyValueBlock(p);
-    // 包含 HTML 块级标签的段落不做换行转 <br>
-    if (/^\s*<(table|div|section|ul|ol|nav|article|aside|figure|figcaption|blockquote)\b/i.test(p)) return `<div>${renderInlineEnhanced(p)}</div>`;
     return `<p>${renderInlineEnhanced(p).replace(/\n/g, '<br>')}</p>`;
   }).join('');
   return result;
@@ -1073,13 +1074,13 @@ function renderWebSection(s, i) {
     return `<section id="${escapeHtml(s.anchor)}" class="web-section">${head}<div class="text-panel">${renderAllBlocks(s.blocks)}</div>${imagesHtml}</section>`;
   }
 
-  // chat-log: 对话回放渲染
+  // chat-log: 对话回放渲染，按原始顺序穿插渲染
   if (s.type === 'chat-log') {
-    const msgs = s.blocks.filter(b => b.kind === 'chat-message');
-    const otherBlocks = s.blocks.filter(b => b.kind !== 'chat-message');
-    const msgsHtml = msgs.map(m => renderChatMessage(m)).join('');
-    const otherHtml = otherBlocks.length > 0 ? `<div class="text-panel" style="margin-bottom:24px">${renderAllBlocks(otherBlocks)}</div>` : '';
-    return `<section id="${escapeHtml(s.anchor)}" class="web-section chat-log">${head}${otherHtml}<div class="chat-timeline">${msgsHtml}</div>${imagesHtml}</section>`;
+    const parts = s.blocks.map(b => {
+      if (b.kind === 'chat-message') return renderChatMessage(b);
+      return renderAllBlocks([b]);
+    }).filter(Boolean);
+    return `<section id="${escapeHtml(s.anchor)}" class="web-section chat-log">${head}<div class="chat-timeline">${parts.join('')}</div>${imagesHtml}</section>`;
   }
 
   // 兜底：通用渲染
